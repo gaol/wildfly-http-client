@@ -36,6 +36,7 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
+import org.wildfly.security.auth.callback.CredentialCallback;
 import org.wildfly.security.auth.client.AuthenticationConfiguration;
 import org.wildfly.security.auth.client.AuthenticationContext;
 import org.wildfly.security.auth.client.AuthenticationContextConfigurationClient;
@@ -52,6 +53,7 @@ import io.undertow.util.HexConverter;
 import io.undertow.util.StatusCodes;
 import io.undertow.util.AttachmentKey;
 import org.wildfly.security.auth.principal.NamePrincipal;
+import org.wildfly.security.credential.BearerTokenCredential;
 
 /**
  * Class that holds authentication information for a connection
@@ -117,6 +119,10 @@ class PoolAuthenticationContext {
             return true;
 
         }
+        if (auth.startsWith("bearer ")) {
+            current = Type.BEARER;
+            return true;
+        }
         return false;
     }
 
@@ -134,8 +140,9 @@ class PoolAuthenticationContext {
         // TODO: also try credential callback, passing in DIGEST parameters (if any) when DIGEST is in use
         NameCallback nameCallback = new NameCallback("user name");
         PasswordCallback passwordCallback = new PasswordCallback("password", false);
+        CredentialCallback bearerTokenCallback = new CredentialCallback(BearerTokenCredential.class);
         try {
-            callbackHandler.handle(new Callback[]{nameCallback, passwordCallback});
+            callbackHandler.handle(new Callback[]{nameCallback, passwordCallback, bearerTokenCallback});
         } catch (IOException | UnsupportedCallbackException e) {
             return false;
         }
@@ -144,15 +151,24 @@ class PoolAuthenticationContext {
             return false;
         }
         char[] password = passwordCallback.getPassword();
-        if (password == null) {
-            return false;
+
+        BearerTokenCredential bearerTokenCredential = null;
+        if (bearerTokenCallback.getCredential() != null) {
+            bearerTokenCredential = bearerTokenCallback.getCredential().castAs(BearerTokenCredential.class);
         }
+
         Principal principal = new NamePrincipal(name);
         if (current == Type.BASIC) {
+            if (password == null) {
+                return false;
+            }
             String challenge = principal.getName() + ":" + new String(password);
             request.getRequestHeaders().put(Headers.AUTHORIZATION, "Basic " + FlexBase64.encodeString(challenge.getBytes(StandardCharsets.UTF_8), false));
             return true;
         } else if (current == Type.DIGEST) {
+            if (password == null) {
+                return false;
+            }
             DigestImpl current = digestList.poll();
             if (current == null) {
                 return false;
@@ -237,6 +253,10 @@ class PoolAuthenticationContext {
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
+        } else if (current == Type.BEARER) {
+            String challenge = bearerTokenCredential.getToken();
+            request.getRequestHeaders().put(Headers.AUTHORIZATION, "Bearer " + FlexBase64.encodeString(challenge.getBytes(StandardCharsets.UTF_8), false));
+            return true;
         }
         return false;
     }
@@ -285,6 +305,7 @@ class PoolAuthenticationContext {
     enum Type {
         NONE,
         BASIC,
+        BEARER,
         DIGEST
     }
 
