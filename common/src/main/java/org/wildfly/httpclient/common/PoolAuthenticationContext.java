@@ -147,9 +147,6 @@ class PoolAuthenticationContext {
             return false;
         }
         final String name = nameCallback.getName();
-        if (name == null) {
-            return false;
-        }
         char[] password = passwordCallback.getPassword();
 
         BearerTokenCredential bearerTokenCredential = null;
@@ -157,18 +154,19 @@ class PoolAuthenticationContext {
             bearerTokenCredential = bearerTokenCallback.getCredential().castAs(BearerTokenCredential.class);
         }
 
-        Principal principal = new NamePrincipal(name);
         if (current == Type.BASIC) {
-            if (password == null) {
+            if (name == null || password == null) {
                 return false;
             }
+            Principal principal = new NamePrincipal(name);
             String challenge = principal.getName() + ":" + new String(password);
             request.getRequestHeaders().put(Headers.AUTHORIZATION, "Basic " + FlexBase64.encodeString(challenge.getBytes(StandardCharsets.UTF_8), false));
             return true;
         } else if (current == Type.DIGEST) {
-            if (password == null) {
+            if (name == null || password == null) {
                 return false;
             }
+            Principal principal = new NamePrincipal(name);
             DigestImpl current = digestList.poll();
             if (current == null) {
                 return false;
@@ -254,8 +252,10 @@ class PoolAuthenticationContext {
                 throw new RuntimeException(e);
             }
         } else if (current == Type.BEARER) {
-            String challenge = bearerTokenCredential.getToken();
-            request.getRequestHeaders().put(Headers.AUTHORIZATION, "Bearer " + FlexBase64.encodeString(challenge.getBytes(StandardCharsets.UTF_8), false));
+            if (bearerTokenCredential == null) {
+                return false;
+            }
+            request.getRequestHeaders().put(Headers.AUTHORIZATION, "Bearer " + bearerTokenCredential.getToken());
             return true;
         }
         return false;
