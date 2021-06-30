@@ -152,6 +152,24 @@
             <artifactId>undertow-server</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>5.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
+            <version>1.1.6</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>jakarta.json</artifactId>
+            <version>1.1.6</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 
@@ -191,6 +209,7 @@
                     <configuration>
                         <enableAssertions>true</enableAssertions>
                         <runOrder>reversealphabetical</runOrder>
+                        <reuseForks>false</reuseForks>
                         <redirectTestOutputToFile>true</redirectTestOutputToFile>
                         <systemPropertyVariables>
                             <default.server.address>localhost</default.server.address>

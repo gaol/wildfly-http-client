@@ -48,6 +48,7 @@ import org.wildfly.security.http.HttpAuthenticationException;
 import org.wildfly.security.http.HttpServerAuthenticationMechanism;
 import org.wildfly.security.http.HttpServerAuthenticationMechanismFactory;
 import org.wildfly.security.http.basic.BasicMechanismFactory;
+import org.wildfly.security.http.bearer.BearerMechanismFactory;
 import org.wildfly.security.http.cert.ClientCertMechanismFactory;
 import org.wildfly.security.http.digest.DigestMechanismFactory;
 import org.wildfly.security.http.util.AggregateServerMechanismFactory;
@@ -200,7 +201,8 @@ public class HTTPTestServer extends BlockJUnit4ClassRunner {
         HttpServerAuthenticationMechanismFactory basic = new BasicMechanismFactory();
         HttpServerAuthenticationMechanismFactory digest = new DigestMechanismFactory();
         HttpServerAuthenticationMechanismFactory clientCert = new ClientCertMechanismFactory();
-        HttpServerAuthenticationMechanismFactory aggregated = new AggregateServerMechanismFactory(basic, digest, clientCert);
+        HttpServerAuthenticationMechanismFactory bearer = new BearerMechanismFactory();
+        HttpServerAuthenticationMechanismFactory aggregated = new AggregateServerMechanismFactory(basic, digest, clientCert, bearer);
         HttpAuthenticationFactory httpAuthenticationFactory = HttpAuthenticationFactory.builder()
                 .setSecurityDomain(getSecurityDomain())
                 .setFactory(aggregated)
